@@ -1,5 +1,5 @@
 // Lets the app open offline once it has been visited.
-const CACHE = 'syllabus-cal-v1';
+const CACHE = 'syllabus-cal-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'favicon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

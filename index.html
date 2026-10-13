@@ -171,9 +171,9 @@ ul.events { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
         </div>
         <label class="btn small" for="file" style="text-transform: none; letter-spacing: 0; font-size: .82rem; color: var(--ink);">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>
-          Upload PDF or .txt
+          Upload PDF, Word or .txt
         </label>
-        <input type="file" id="file" accept=".pdf,.txt,.md,text/plain,application/pdf" class="sr">
+        <input type="file" id="file" accept=".pdf,.docx,.txt,.md,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="sr">
       </div>
       <textarea id="syl" spellcheck="false" aria-label="Syllabus text" hidden></textarea>
       <div id="marks" class="source-view" aria-label="Syllabus with dates highlighted"></div>
@@ -363,7 +363,13 @@ function parseSyllabus(text, term) {
     for (const f of dates) rest = rest.slice(0, f.s) + ' '.repeat(f.e - f.s) + rest.slice(f.e);
     const t = findTime(rest);
     if (t) rest = rest.slice(0, t.span[0]) + ' '.repeat(t.span[1] - t.span[0]) + rest.slice(t.span[1]);
-    let title = cleanTitle(rest);
+    // Table rows and column layouts: pick the column that names the deliverable ("Membranes   Lab report 1 due" -> "Lab report 1 due").
+    const segs = rest.split(/\s{3,}|\t/).map(cleanTitle).filter(t => t.length >= 2);
+    let title;
+    if (segs.length > 1) {
+      const key = segs.filter(t => classify(t) !== 'other');
+      title = key.length ? key.join(', ') : segs.join(' · ');
+    } else title = cleanTitle(rest);
     let context = line;
     if (title.length < 3) {
       for (let k = li + 1; k < Math.min(lines.length, li + 3); k++) {
@@ -379,7 +385,7 @@ function parseSyllabus(text, term) {
       for (let k = li - 1; k >= 0 && k >= li - 2; k--) {
         const pl = lines[k].trim();
         if (!pl) continue;
-        if (pl.length <= 40 && !DATE_PATTERNS.some(p => { p.re.lastIndex = 0; return p.re.test(pl); }) && classify(pl) !== 'other') {
+        if (pl.length <= 40 && !/\b(dates?|topics?|week|day|reading|readings)\b/i.test(pl) && !DATE_PATTERNS.some(p => { p.re.lastIndex = 0; return p.re.test(pl); }) && classify(pl) !== 'other') {
           const head = pl === pl.toUpperCase() ? pl[0] + pl.slice(1).toLowerCase() : pl;
           title = cleanTitle(head) + ', ' + title.replace(/^./, c => c.toLowerCase() === c ? c : c);
           type = classify(title);
@@ -707,6 +713,63 @@ if (typeof document !== 'undefined') {
     }
     return pages.join('\n\n');
   }
+  // Word (.docx): it's a zip; read word/document.xml directly so no outside library is needed.
+  // Each table row becomes one line ("Oct 14   Midterm exam") so dates stay next to their assignments.
+  async function zipEntry(buf, wanted) {
+    const v = new DataView(buf), u8 = new Uint8Array(buf);
+    let eocd = -1;
+    for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 66000); i--) if (v.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    if (eocd < 0) throw new Error('notzip');
+    let p = v.getUint32(eocd + 16, true);
+    const count = v.getUint16(eocd + 10, true), dec = new TextDecoder();
+    for (let n = 0; n < count; n++) {
+      if (v.getUint32(p, true) !== 0x02014b50) break;
+      const method = v.getUint16(p + 10, true), csize = v.getUint32(p + 20, true);
+      const nlen = v.getUint16(p + 28, true), elen = v.getUint16(p + 30, true), clen = v.getUint16(p + 32, true);
+      const local = v.getUint32(p + 42, true), name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+      if (name === wanted) {
+        const start = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
+        const data = u8.slice(start, start + csize);
+        if (method === 0) return dec.decode(data);
+        if (method !== 8 || typeof DecompressionStream === 'undefined') throw new Error('unsupported');
+        const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        return await new Response(stream).text();
+      }
+      p += 46 + nlen + elen + clen;
+    }
+    throw new Error('notdocx');
+  }
+  async function docxText(file) {
+    const xml = await zipEntry(await file.arrayBuffer(), 'word/document.xml');
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    const kids = (el, name) => [...el.children].filter(c => c.localName === name);
+    const paraText = p => {
+      let s = '';
+      const walk = el => { for (const c of el.children) {
+        const n = c.localName;
+        if (n === 't') s += c.textContent;
+        else if (n === 'tab' || n === 'br' || n === 'cr') s += ' ';
+        else if (n !== 'instrText' && n !== 'delText' && n !== 'rPr' && n !== 'pPr') walk(c);
+      } };
+      walk(p); return s.replace(/\s+/g, ' ').trim();
+    };
+    const out = [];
+    const block = el => { for (const c of el.children) {
+      const n = c.localName;
+      if (n === 'p') { const t = paraText(c); out.push(t); }
+      else if (n === 'tbl') {
+        for (const tr of kids(c, 'tr')) {
+          const cells = kids(tr, 'tc').map(tc => [...tc.getElementsByTagNameNS('*', 'p')].map(paraText).filter(Boolean).join(' ')).filter(Boolean);
+          if (cells.length) out.push(cells.join('   '));
+        }
+        out.push('');
+      } else if (n === 'sdt' || n === 'sdtContent' || n === 'customXml' || n === 'body') block(c);
+    } };
+    const body = doc.getElementsByTagNameNS('*', 'body')[0];
+    if (!body) throw new Error('notdocx');
+    block(body);
+    return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
   $('file').addEventListener('change', async e => {
     const file = e.target.files[0]; if (!file) return;
     const note = $('fileNote');
@@ -714,14 +777,15 @@ if (typeof document !== 'undefined') {
     try {
       let text;
       if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') text = await pdfText(file);
-      else if (/\.(docx?|pages)$/i.test(file.name)) throw new Error('word');
+      else if (/\.docx$/i.test(file.name)) text = await docxText(file);
+      else if (/\.(doc|pages|odt|rtf)$/i.test(file.name)) throw new Error('word');
       else text = await file.text();
       if (!text.trim()) throw new Error('empty');
       $('syl').value = text; state.isExample = false; $('examplePill').hidden = true; $('course').value = '';
       runParse(); setTab('marks');
       note.textContent = `Read ${file.name}. Highlighted dates are the ones that became events.`;
     } catch (err) {
-      note.textContent = err.message === 'word' ? 'Word files can\'t be read here. Open the file, copy the text, and paste it into Edit text.'
+      note.textContent = err.message === 'word' ? 'That file type can\'t be read here. Save it as .docx or PDF (File, then Save As), or copy the text and paste it into Edit text.'
         : err.message === 'empty' ? 'That file has no selectable text (it may be a scanned image). Copy the schedule by hand or try a different file.'
         : 'That file couldn\'t be read. Try copying the text and pasting it into Edit text.';
     }
