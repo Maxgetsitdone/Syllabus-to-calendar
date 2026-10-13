@@ -1,0 +1,823 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<title>Syllabus to Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: two-panel workbench. Left = the syllabus (with highlighter marks on every date found), right = the checked list of events and the export bar. Stacks on phones. */
+:root {
+  --paper: #f5f6fa;
+  --surface: #ffffff;
+  --ink: #161a2c;
+  --muted: #5a6280;
+  --line: #dde1ec;
+  --accent: #2a43c4;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6eafb;
+  --hl: #fbe27a;
+  --hl-ink: #2f2600;
+  --exam: #b9262f; --exam-bg: #fce6e7;
+  --quiz: #9a5a00; --quiz-bg: #fcefd6;
+  --due: #2a43c4; --due-bg: #e6eafb;
+  --other: #5a6280; --other-bg: #eceef4;
+  --ok: #1d7a4a;
+  --shadow: 0 1px 2px rgba(22,26,44,.06), 0 6px 24px rgba(22,26,44,.06);
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1220; --surface: #171b2b; --ink: #e7e9f3; --muted: #9aa1bd; --line: #2a3048;
+    --accent: #93a4ff; --accent-ink: #0c1024; --accent-soft: #1f2648;
+    --hl: #6a5713; --hl-ink: #fff5c8;
+    --exam: #ff8d94; --exam-bg: #3a1b21; --quiz: #f1b65e; --quiz-bg: #382a13;
+    --due: #a2b1ff; --due-bg: #1f2648; --other: #a5acc7; --other-bg: #242a3e;
+    --ok: #6fd6a0; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1220; --surface: #171b2b; --ink: #e7e9f3; --muted: #9aa1bd; --line: #2a3048;
+  --accent: #93a4ff; --accent-ink: #0c1024; --accent-soft: #1f2648;
+  --hl: #6a5713; --hl-ink: #fff5c8;
+  --exam: #ff8d94; --exam-bg: #3a1b21; --quiz: #f1b65e; --quiz-bg: #382a13;
+  --due: #a2b1ff; --due-bg: #1f2648; --other: #a5acc7; --other-bg: #242a3e;
+  --ok: #6fd6a0; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; margin: 0; }
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 64px; display: grid; gap: 24px; }
+header { display: grid; gap: 8px; max-width: 760px; }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1.02; letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+h1 .mark { background: linear-gradient(transparent 52%, var(--hl) 52%, var(--hl) 92%, transparent 92%); padding-inline: .08em; color: inherit; }
+.lede { color: var(--muted); margin: 0; font-size: 1.02rem; max-width: 62ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px; align-items: start; }
+@media (max-width: 920px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.panel h2 { font-family: var(--f-display); font-weight: 600; font-size: 1.15rem; margin: 0; letter-spacing: -0.01em; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.field { display: grid; gap: 4px; flex: 1 1 140px; min-width: 0; }
+label, .lbl { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+input[type=text], select, textarea, input[type=date], input[type=time] {
+  font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0;
+}
+textarea { min-height: 380px; resize: vertical; font-family: var(--f-mono); font-size: .8rem; line-height: 1.6; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn { font: inherit; font-weight: 600; font-size: .9rem; border-radius: 9px; padding: 9px 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .55; cursor: default; }
+.btn.small { padding: 6px 10px; font-size: .82rem; }
+.tabs { display: flex; gap: 4px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 3px; width: fit-content; }
+.tabs button { font: inherit; font-size: .85rem; font-weight: 500; border: 0; background: transparent; color: var(--muted); padding: 5px 12px; border-radius: 7px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.source-view { font-family: var(--f-mono); font-size: .8rem; line-height: 1.7; white-space: pre-wrap; word-break: break-word; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; max-height: 520px; overflow: auto; min-height: 380px; }
+mark { background: var(--hl); color: var(--hl-ink); border-radius: 3px; padding: 0 2px; }
+mark.m-other { background: var(--other-bg); color: var(--other); }
+.note { font-size: .82rem; color: var(--muted); margin: 0; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 600; letter-spacing: .03em; padding: 3px 9px; border-radius: 999px; background: var(--hl); color: var(--hl-ink); }
+.linkbtn { font: inherit; font-size: .82rem; border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; }
+.summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.count { font-family: var(--f-display); font-weight: 800; font-size: 1.6rem; line-height: 1; margin-right: 6px; font-variant-numeric: tabular-nums; }
+.tally { font-size: .8rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+.t-exam { background: var(--exam-bg); color: var(--exam); }
+.t-quiz { background: var(--quiz-bg); color: var(--quiz); }
+.t-assignment { background: var(--due-bg); color: var(--due); }
+.t-other { background: var(--other-bg); color: var(--other); }
+.export { display: grid; gap: 10px; padding: 14px; border-radius: 10px; background: var(--accent-soft); }
+.export .row { align-items: center; }
+.export .field { flex: 0 1 200px; }
+.export select { background: var(--surface); }
+.month { font-family: var(--f-display); font-weight: 600; font-size: .95rem; color: var(--muted); margin: 6px 0 0; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+ul.events { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.ev { display: grid; grid-template-columns: 22px 118px minmax(0, 1fr) 142px 112px 32px 32px; gap: 8px; align-items: center; padding: 8px 4px; border-bottom: 1px solid var(--line); }
+.ev:last-child { border-bottom: 0; }
+.ev.off > :not(.check) { opacity: .5; }
+.ev input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+.ev select.chip { border: 0; font-size: .8rem; font-weight: 600; padding: 5px 8px; border-radius: 999px; cursor: pointer; }
+.ev input.title { background: transparent; border-color: transparent; font-weight: 500; padding-inline: 6px; }
+.ev input.title:hover, .ev input.title:focus { border-color: var(--line); background: var(--paper); }
+.ev input[type=date], .ev input[type=time] { font-family: var(--f-mono); font-size: .8rem; padding: 6px 6px; font-variant-numeric: tabular-nums; }
+.iconbtn { width: 32px; height: 32px; display: inline-grid; place-items: center; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--muted); cursor: pointer; }
+.iconbtn:hover { border-color: var(--line); color: var(--ink); background: var(--paper); }
+.iconbtn svg { width: 17px; height: 17px; }
+.ev .src { grid-column: 3 / -1; font-size: .76rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-inline: 6px; margin-top: -4px; }
+@media (max-width: 640px) {
+  .ev { grid-template-columns: 22px auto minmax(0,1fr) 32px; grid-template-areas: "c t t d" "c chip chip chip" "c dt tm g" "c src src src"; row-gap: 6px; }
+  .ev .check { grid-area: c; align-self: start; margin-top: 8px; }
+  .ev .chip { grid-area: chip; justify-self: start; }
+  .ev .title { grid-area: t; }
+  .ev .del { grid-area: d; }
+  .ev input[type=date] { grid-area: dt; }
+  .ev input[type=time] { grid-area: tm; }
+  .ev .gc { grid-area: g; }
+  .ev .src { grid-area: src; margin: 0; }
+}
+.empty { text-align: center; padding: 36px 12px; color: var(--muted); display: grid; gap: 6px; justify-items: center; }
+.empty strong { color: var(--ink); font-family: var(--f-display); font-size: 1.1rem; }
+.ai-status { font-size: .85rem; color: var(--muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.copybox { width: 100%; min-height: 120px; font-family: var(--f-mono); font-size: .72rem; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); z-index: 10; }
+.foot { color: var(--muted); font-size: .8rem; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: no-preference) { .ev { transition: opacity .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Syllabus to <span class="mark">Calendar</span></h1>
+    <p class="lede">Paste your syllabus or upload the PDF. Every exam, quiz and due date lands in a list you can check over, then add to Google Calendar, Apple Calendar or Outlook in one go.</p>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-syl">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <h2 id="h-syl">Your syllabus</h2>
+        <span id="examplePill" class="pill">Example syllabus <button class="linkbtn" id="clearBtn" type="button" style="color: inherit;">Clear</button></span>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="course">Course name</label>
+          <input type="text" id="course" placeholder="e.g. PSYC 101" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="term">Term</label>
+          <select id="term"></select>
+        </div>
+      </div>
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <div class="tabs" role="tablist" aria-label="Syllabus view">
+          <button role="tab" id="tabEdit" aria-selected="false" type="button">Edit text</button>
+          <button role="tab" id="tabMarks" aria-selected="true" type="button">Dates found</button>
+        </div>
+        <label class="btn small" for="file" style="text-transform: none; letter-spacing: 0; font-size: .82rem; color: var(--ink);">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>
+          Upload PDF or .txt
+        </label>
+        <input type="file" id="file" accept=".pdf,.txt,.md,text/plain,application/pdf" class="sr">
+      </div>
+      <textarea id="syl" spellcheck="false" aria-label="Syllabus text" hidden></textarea>
+      <div id="marks" class="source-view" aria-label="Syllabus with dates highlighted"></div>
+      <p class="note" id="fileNote">Tip: the "Schedule" or "Important dates" section is all it needs. Highlighted dates are the ones that became events.</p>
+      <div class="row">
+        <button class="btn primary" id="findBtn" type="button">Find dates</button>
+        <button class="btn" id="aiBtn" type="button" hidden>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+          Read it with Claude
+        </button>
+      </div>
+      <div class="ai-status" id="aiStatus" hidden>
+        <span id="aiMsg">Reading your syllabus…</span>
+        <button class="btn small" id="aiStop" type="button">Stop</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="h-ev">
+      <div class="row" style="justify-content: space-between; align-items: center;">
+        <h2 id="h-ev">Dates to add</h2>
+        <button class="btn small" id="addBtn" type="button">+ Add a date</button>
+      </div>
+      <div class="summary" id="summary"></div>
+
+      <div class="export" aria-label="Add to your calendar">
+        <div class="row">
+          <div class="field">
+            <label for="remind">Reminder</label>
+            <select id="remind">
+              <option value="">No reminder</option>
+              <option value="1" selected>1 day before</option>
+              <option value="2">2 days before</option>
+              <option value="7">1 week before</option>
+            </select>
+          </div>
+          <button class="btn primary" id="icsBtn" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span id="icsLabel">Download .ics</span>
+          </button>
+          <button class="btn" id="csvBtn" type="button">Google Calendar CSV</button>
+        </div>
+        <p class="note" id="exportNote">Open the .ics file to add everything to Apple Calendar or Outlook. In Google Calendar, go to Settings, then Import &amp; export, and import either file.</p>
+        <textarea id="copyBox" class="copybox" readonly hidden aria-label="Calendar file text"></textarea>
+      </div>
+
+      <div id="list"></div>
+    </section>
+  </div>
+
+  <p class="foot">Everything runs in your browser. Your syllabus is not uploaded anywhere unless you choose "Read it with Claude". Always compare the list against your syllabus before relying on it.</p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+/* ---------- Parsing (pure functions) ---------- */
+const MONTHS = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5, jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+const MON = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
+const monIdx = s => MONTHS[s.slice(0, 3).toLowerCase()];
+const fullYear = y => y == null ? null : (String(y).length === 2 ? 2000 + +y : +y);
+// Priority order matters: earlier patterns win when matches overlap.
+const DATE_PATTERNS = [
+  { re: new RegExp(`\\b(${MON})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?:,?\\s+(20\\d{2})\\b)?`, 'gi'), f: m => [monIdx(m[1]), +m[2], fullYear(m[3])] },
+  { re: /\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/g, f: m => [+m[2] - 1, +m[3], +m[1]] },
+  { re: /(?<![\d/.])(\d{1,2})\/(\d{1,2})(?:\/(20\d{2}|\d{2}))?(?![\d/])/g, f: m => [+m[1] - 1, +m[2], fullYear(m[3])] },
+  { re: new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(${MON})\\b\\.?(?:,?\\s+(20\\d{2})\\b)?`, 'gi'), f: m => [monIdx(m[2]), +m[1], fullYear(m[3])] },
+];
+const MER = '(a\\.?m\\.?|p\\.?m\\.?)';
+const RE_TRANGE = new RegExp(`\\b(\\d{1,2})(?::(\\d{2}))?\\s*${MER}?\\s*(?:-|–|—|to)\\s*(\\d{1,2})(?::(\\d{2}))?\\s*${MER}(?![a-z])`, 'i');
+const RE_TIME = new RegExp(`\\b(\\d{1,2})(?::(\\d{2}))?\\s*${MER}(?![a-z])`, 'i');
+const RE_T24 = /\b(1[3-9]|2[0-3]):([0-5]\d)\b/;
+const RE_NOON = /\b(noon|midnight)\b/i;
+const RE_RANGE_TAIL = /^\s*(?:-|–|—|to|through|thru|until)\s*(?:\d{1,2}(?:st|nd|rd|th)?\b(?!\s*(?::|\/|a\.?m|p\.?m)))?/i;
+const RE_WEEKDAY = /\b(?:mon(?:day)?|tue(?:s(?:day)?)?|wed(?:nesday)?|thu(?:r(?:s(?:day)?)?)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b\.?,?/gi;
+
+const pad = n => String(n).padStart(2, '0');
+function to24(h, m, mer) {
+  h = +h; m = +(m || 0);
+  if (mer) { const pm = /p/i.test(mer); h = (h % 12) + (pm ? 12 : 0); }
+  return h * 60 + m;
+}
+const fmtMin = t => `${pad(Math.floor(t / 60) % 24)}:${pad(t % 60)}`;
+
+function classify(text) {
+  const s = text.toLowerCase();
+  if (/\bno class(es)?\b|\bholiday\b|\bbreak\b|\bcancel+ed\b|\blast day to\b|\bdrop deadline\b|\bwithdraw/.test(s)) return 'other';
+  if (/\breview\b/.test(s) && !/\bdue\b/.test(s)) return 'other';
+  const finalExam = /\bfinals?\b(?!\s+(?:research\s+)?(?:paper|project|report|essay|draft|presentation|portfolio|submission))/.test(s);
+  if ((/\b(midterm|exam|test)s?\b/.test(s) || (finalExam && !/\bdue\b/.test(s))) && !/\btest(ing)? (of|for)\b/.test(s)) return 'exam';
+  if (/\bquiz(zes)?\b/.test(s)) return 'quiz';
+  if (/\b(due|homework|hw\s*#?\d*|assignment|problem set|p-?set|essay|paper|report|project|submit|submission|deadline|presentation|proposal|draft|reflection|response|portfolio|lab\s*\d+)\b/.test(s)) return 'assignment';
+  return 'other';
+}
+
+function yearFor(mon, explicit, term) {
+  if (explicit) return explicit;
+  const { season, year } = term;
+  if (season === 'fall' && mon <= 6) return year + 1;
+  if (season === 'winter' && mon >= 8) return year - 1;
+  return year;
+}
+
+function findTime(text) {
+  let m = text.match(RE_TRANGE);
+  if (m) {
+    let end = to24(m[4], m[5], m[6]);
+    let start = to24(m[1], m[2], m[3] || m[6]);
+    if (!m[3] && start > end) start = to24(m[1], m[2], 'am');
+    return { time: fmtMin(start), end: fmtMin(end), span: [m.index, m.index + m[0].length] };
+  }
+  m = text.match(RE_TIME);
+  if (m && +m[1] <= 12) return { time: fmtMin(to24(m[1], m[2], m[3])), end: '', span: [m.index, m.index + m[0].length] };
+  m = text.match(RE_NOON);
+  if (m) return { time: /noon/i.test(m[1]) ? '12:00' : '23:59', end: '', span: [m.index, m.index + m[0].length] };
+  m = text.match(RE_T24);
+  if (m) return { time: `${m[1]}:${m[2]}`, end: '', span: [m.index, m.index + m[0].length] };
+  return null;
+}
+
+function cleanTitle(t) {
+  t = t.replace(/\b(?:week|wk)\.?\s*\d+\b/gi, ' ')
+       .replace(RE_WEEKDAY, ' ')
+       .replace(/\(\s*[,;:\-–—]*\s*\)/g, ' ')
+       .replace(/\[\s*\]/g, ' ')
+       .replace(/\s+/g, ' ')
+       .replace(/\s+([,;:)])/g, '$1')
+       .replace(/([,;:|·•])(\s*[,;:|·•\-–—])+/g, '$1');
+  let prev;
+  do {
+    prev = t;
+    t = t.replace(/^[\s,;:|·•\-–—)\]*.]+/, '')
+         .replace(/[\s,;:|·•\-–—(\[*]+$/, '')
+         .replace(/^(?:on|by|at|before|from|is|are)\b\s*/i, '')
+         .replace(/\s*\b(?:on|by|at|before|from|the|until|in)$/i, '');
+  } while (t !== prev);
+  if (t.length > 90) t = t.slice(0, 87).replace(/\s+\S*$/, '') + '…';
+  return t ? t[0].toUpperCase() + t.slice(1) : '';
+}
+
+function validDate(y, mo, d) {
+  if (mo == null || mo < 0 || mo > 11 || d < 1 || d > 31) return false;
+  const dt = new Date(y, mo, d);
+  return dt.getMonth() === mo && dt.getDate() === d;
+}
+
+let _id = 0;
+const newId = () => 'e' + (++_id) + Math.random().toString(36).slice(2, 6);
+
+function parseSyllabus(text, term) {
+  const lines = text.split(/\r?\n/);
+  const events = [];
+  const marks = [];
+  let offset = 0;
+  const lineStarts = [];
+  for (const l of lines) { lineStarts.push(offset); offset += l.length + 1; }
+
+  lines.forEach((line, li) => {
+    const found = [];
+    for (const p of DATE_PATTERNS) {
+      p.re.lastIndex = 0;
+      let m;
+      while ((m = p.re.exec(line))) {
+        const s = m.index, e = s + m[0].length;
+        if (found.some(f => s < f.e && e > f.s)) continue;
+        const [mo, d, y] = p.f(m);
+        if (mo == null || d < 1 || d > 31) continue;
+        found.push({ s, e, mo, d, y });
+      }
+    }
+    if (!found.length) return;
+    found.sort((a, b) => a.s - b.s);
+    // Merge ranges like "Sep 14–18" or "Sep 14 – Sep 18": keep the start date only.
+    const dates = [];
+    for (let i = 0; i < found.length; i++) {
+      const f = found[i];
+      const tail = line.slice(f.e).match(RE_RANGE_TAIL);
+      if (tail && tail[0].trim()) {
+        const next = found[i + 1];
+        if (next && next.s - f.e <= tail[0].length + 1 && /^\s*(?:-|–|—|to|through|thru|until)\s*$/i.test(line.slice(f.e, next.s))) {
+          f.e = next.e; i++;
+        } else if (/\d/.test(tail[0])) {
+          f.e += tail[0].length;
+        }
+      }
+      dates.push(f);
+    }
+    let rest = line;
+    for (const f of dates) rest = rest.slice(0, f.s) + ' '.repeat(f.e - f.s) + rest.slice(f.e);
+    const t = findTime(rest);
+    if (t) rest = rest.slice(0, t.span[0]) + ' '.repeat(t.span[1] - t.span[0]) + rest.slice(t.span[1]);
+    let title = cleanTitle(rest);
+    let context = line;
+    if (title.length < 3) {
+      for (let k = li + 1; k < Math.min(lines.length, li + 3); k++) {
+        const nl = lines[k].trim();
+        if (!nl) continue;
+        if (DATE_PATTERNS.some(p => { p.re.lastIndex = 0; return p.re.test(nl); })) break;
+        title = cleanTitle(nl); context = line.trim() + ' ' + nl; break;
+      }
+    }
+    if (title.length < 3) return;
+    let type = classify(title + ' ' + context);
+    if (type === 'other') {
+      for (let k = li - 1; k >= 0 && k >= li - 2; k--) {
+        const pl = lines[k].trim();
+        if (!pl) continue;
+        if (pl.length <= 40 && !DATE_PATTERNS.some(p => { p.re.lastIndex = 0; return p.re.test(pl); }) && classify(pl) !== 'other') {
+          const head = pl === pl.toUpperCase() ? pl[0] + pl.slice(1).toLowerCase() : pl;
+          title = cleanTitle(head) + ', ' + title.replace(/^./, c => c.toLowerCase() === c ? c : c);
+          type = classify(title);
+        }
+        break;
+      }
+    }
+    for (const f of dates) {
+      const y = yearFor(f.mo, f.y, term);
+      if (!validDate(y, f.mo, f.d)) continue;
+      const date = `${y}-${pad(f.mo + 1)}-${pad(f.d)}`;
+      if (events.some(e => e.date === date && e.title === title)) continue;
+      events.push({ id: newId(), on: type !== 'other', type, title, date, time: t ? t.time : '', end: t ? t.end : '', source: line.trim() });
+      marks.push({ s: lineStarts[li] + f.s, e: lineStarts[li] + f.e, type });
+    }
+  });
+  events.sort(byDate);
+  return { events, marks };
+}
+const byDate = (a, b) => (a.date + (a.time || '00:00')).localeCompare(b.date + (b.time || '00:00'));
+
+function detectTerm(text) {
+  const m = text.match(/\b(fall|autumn|spring|summer|winter)\s*(?:semester|quarter|term|session)?\s*'?(20\d{2})\b/i);
+  if (!m) return null;
+  const season = m[1].toLowerCase() === 'autumn' ? 'fall' : m[1].toLowerCase();
+  return { season, year: +m[2] };
+}
+
+/* ---------- Calendar export (pure functions) ---------- */
+function eventTimes(ev) {
+  if (!ev.time) return null;
+  const [y, mo, d] = ev.date.split('-').map(Number);
+  const [h, mi] = ev.time.split(':').map(Number);
+  let start = new Date(y, mo - 1, d, h, mi), end;
+  if (ev.end) {
+    const [eh, em] = ev.end.split(':').map(Number);
+    end = new Date(y, mo - 1, d, eh, em);
+    if (end <= start) end = new Date(start.getTime() + 60 * 60000);
+  } else if (ev.type === 'assignment') {
+    end = start; start = new Date(end.getTime() - 30 * 60000);
+  } else {
+    end = new Date(start.getTime() + 60 * 60000);
+  }
+  return { start, end };
+}
+const icsLocal = dt => `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}T${pad(dt.getHours())}${pad(dt.getMinutes())}00`;
+const ymd = s => s.replace(/-/g, '');
+function nextDay(s) { const [y, m, d] = s.split('-').map(Number); const dt = new Date(y, m - 1, d + 1); return `${dt.getFullYear()}${pad(dt.getMonth() + 1)}${pad(dt.getDate())}`; }
+const icsEsc = s => String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+function fold(line) {
+  const out = []; let s = line;
+  while (s.length > 74) { out.push(s.slice(0, 74)); s = ' ' + s.slice(74); }
+  out.push(s); return out.join('\r\n');
+}
+const displayTitle = (ev, course) => course ? `${course} · ${ev.title}` : ev.title;
+
+function buildICS(events, course, remindDays) {
+  const now = new Date();
+  const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Syllabus to Calendar//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+  if (course) L.push('X-WR-CALNAME:' + icsEsc(course));
+  for (const ev of events) {
+    L.push('BEGIN:VEVENT', 'UID:' + ev.id + '-' + ymd(ev.date) + '@syllabus-to-calendar', 'DTSTAMP:' + stamp);
+    const t = eventTimes(ev);
+    if (t) { L.push('DTSTART:' + icsLocal(t.start), 'DTEND:' + icsLocal(t.end)); }
+    else { L.push('DTSTART;VALUE=DATE:' + ymd(ev.date), 'DTEND;VALUE=DATE:' + nextDay(ev.date), 'TRANSP:TRANSPARENT'); }
+    L.push('SUMMARY:' + icsEsc(displayTitle(ev, course)));
+    if (ev.source) L.push('DESCRIPTION:' + icsEsc('From the syllabus: ' + ev.source));
+    L.push('CATEGORIES:' + icsEsc(TYPE_LABEL[ev.type]));
+    if (remindDays) {
+      const trig = t ? `-P${remindDays}D` : `-P${remindDays - 1 ? (remindDays - 1) + 'D' : ''}T15H`;
+      L.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc(displayTitle(ev, course)), 'TRIGGER:' + trig, 'END:VALARM');
+    }
+    L.push('END:VEVENT');
+  }
+  L.push('END:VCALENDAR');
+  return L.map(fold).join('\r\n') + '\r\n';
+}
+
+function buildCSV(events, course) {
+  const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+  const us = s => { const [y, m, d] = s.split('-'); return `${m}/${d}/${y}`; };
+  const ampm = dt => { let h = dt.getHours(); const m = pad(dt.getMinutes()); const p = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return `${h}:${m} ${p}`; };
+  const isoOf = dt => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+  const rows = [['Subject', 'Start Date', 'Start Time', 'End Date', 'End Time', 'All Day Event', 'Description'].join(',')];
+  for (const ev of events) {
+    const t = eventTimes(ev);
+    rows.push([
+      q(displayTitle(ev, course)),
+      us(t ? isoOf(t.start) : ev.date), t ? ampm(t.start) : '',
+      us(t ? isoOf(t.end) : ev.date), t ? ampm(t.end) : '',
+      t ? 'False' : 'True',
+      q(ev.source ? 'From the syllabus: ' + ev.source : ''),
+    ].join(','));
+  }
+  return rows.join('\r\n') + '\r\n';
+}
+
+function gcalLink(ev, course) {
+  const t = eventTimes(ev);
+  const dates = t ? `${icsLocal(t.start)}/${icsLocal(t.end)}` : `${ymd(ev.date)}/${nextDay(ev.date)}`;
+  const p = new URLSearchParams({ action: 'TEMPLATE', text: displayTitle(ev, course), dates, details: ev.source ? 'From the syllabus: ' + ev.source : '' });
+  return 'https://calendar.google.com/calendar/render?' + p.toString();
+}
+
+const TYPE_LABEL = { exam: 'Exam', quiz: 'Quiz', assignment: 'Due date', other: 'Other' };
+
+const SAMPLE = `PSYC 101: Introduction to Psychology, Fall 2026
+Instructor: Dr. R. Okafor | Office hours: Tue 2–4 pm, Kerr Hall 310
+Class meets Mon/Wed 10:00–11:15 am in Moore 100
+
+GRADING
+Quizzes (5) 15% · Reading responses 15% · Research paper 20%
+Midterm exam 20% · Final exam 30%
+
+COURSE SCHEDULE
+Week 1   Mon Aug 31    Course overview: what is psychology?
+         Fri Sep 4     Reading Response 1 due on Canvas by 11:59 pm
+Week 2   Mon Sep 7     Labor Day, no class
+         Wed Sep 9     The brain and nervous system (Ch. 2)
+Week 3   Mon 9/14      Quiz 1 (Ch. 1–2) in class
+         Fri 9/18      Reading Response 2 due by 11:59 pm
+Week 4   Wed 9/23      Sensation and perception (Ch. 4)
+Week 5   Mon 9/28      Quiz 2 (Ch. 3–4)
+         Fri 10/2      Reading Response 3 due by 11:59 pm
+Week 6   Oct 5–9       Learning and memory (Ch. 6–7)
+Week 7   Mon Oct 12    Midterm review session
+         Wed Oct 14    MIDTERM EXAM, in class (Ch. 1–7)
+Week 8   Wed Oct 21    Quiz 3 (Ch. 8)
+         Fri Oct 23    Research paper topic proposal due at 5:00 pm
+Week 10  Mon Nov 2     Quiz 4 (Ch. 9–10)
+         Fri Nov 6     Last day to drop with a W
+Week 11  Fri Nov 13    Research paper draft due for peer review by 11:59 pm
+Week 12  Wed Nov 18    Quiz 5 (Ch. 11–12)
+Week 13  Nov 25–27     Thanksgiving break, no class
+Week 14  Mon Dec 7     Final research paper due by 11:59 pm
+
+FINAL EXAM
+Thursday, December 10, 8:00–11:00 am, Moore 100 (cumulative)`;
+
+/* ---------- Page ---------- */
+if (typeof document !== 'undefined') {
+  const $ = id => document.getElementById(id);
+  const state = { events: [], marks: [], text: SAMPLE, isExample: true };
+  const inViewer = typeof window.claude !== 'undefined' && window.claude && typeof window.claude.use === 'function';
+  let downloads = null, sampler = null;
+
+  // Terms
+  const SEASONS = ['winter', 'spring', 'summer', 'fall'];
+  const SEASON_LABEL = { winter: 'Winter', spring: 'Spring', summer: 'Summer', fall: 'Fall' };
+  function termFromToday() {
+    const d = new Date(), mo = d.getMonth(), y = d.getFullYear();
+    if (mo >= 7) return { season: 'fall', year: y };
+    if (mo >= 5) return { season: 'summer', year: y };
+    return { season: 'spring', year: y };
+  }
+  function fillTerms(selected) {
+    const base = termFromToday();
+    const opts = [];
+    for (let y = base.year - 1; y <= base.year + 1; y++) for (const s of SEASONS) opts.push({ season: s, year: y });
+    if (selected && !opts.some(o => o.season === selected.season && o.year === selected.year)) opts.push(selected);
+    const sel = selected || base;
+    $('term').innerHTML = opts.map(o => `<option value="${o.season}-${o.year}"${o.season === sel.season && o.year === sel.year ? ' selected' : ''}>${SEASON_LABEL[o.season]} ${o.year}</option>`).join('');
+  }
+  const currentTerm = () => { const [season, year] = $('term').value.split('-'); return { season, year: +year }; };
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(() => { t.hidden = true; }, 3200);
+  }
+
+  function setTab(which) {
+    const edit = which === 'edit';
+    $('tabEdit').setAttribute('aria-selected', String(edit));
+    $('tabMarks').setAttribute('aria-selected', String(!edit));
+    $('syl').hidden = !edit; $('marks').hidden = edit;
+    if (!edit) renderMarks();
+  }
+
+  function renderMarks() {
+    const text = state.text;
+    if (!text.trim()) { $('marks').innerHTML = '<span style="color: var(--muted)">Nothing here yet. Switch to Edit text and paste your syllabus.</span>'; return; }
+    const ms = [...state.marks].sort((a, b) => a.s - b.s);
+    let html = '', pos = 0;
+    for (const m of ms) {
+      if (m.s < pos) continue;
+      html += esc(text.slice(pos, m.s)) + `<mark class="${m.type === 'other' ? 'm-other' : ''}">${esc(text.slice(m.s, m.e))}</mark>`;
+      pos = m.e;
+    }
+    html += esc(text.slice(pos));
+    $('marks').innerHTML = html;
+  }
+
+  function runParse() {
+    state.text = $('syl').value;
+    const det = detectTerm(state.text);
+    if (det) fillTerms(det);
+    const course = $('course').value.trim();
+    if (!course) {
+      const cm = state.text.match(/\b([A-Z]{2,5})\s?-?(\d{2,4}[A-Z]?)\b/);
+      if (cm) $('course').value = `${cm[1]} ${cm[2]}`;
+    }
+    const r = parseSyllabus(state.text, currentTerm());
+    state.events = r.events; state.marks = r.marks;
+    render(); renderMarks();
+  }
+
+  function renderSummary() {
+    const on = state.events.filter(e => e.on);
+    const c = t => on.filter(e => e.type === t).length;
+    const parts = [['exam', 'exams', 'exam'], ['quiz', 'quizzes', 'quiz'], ['assignment', 'due dates', 'due date'], ['other', 'other', 'other']]
+      .map(([t, pl, sg]) => { const n = c(t); return n ? `<span class="tally t-${t}">${n} ${n === 1 ? sg : pl}</span>` : ''; }).join('');
+    $('summary').innerHTML = `<span class="count">${on.length}</span><span class="note" style="margin-right:4px">of ${state.events.length} selected</span>${parts}`;
+    $('icsBtn').disabled = $('csvBtn').disabled = on.length === 0;
+  }
+
+  const ICON_G = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>';
+  const ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  function rowHTML(ev, course) {
+    const opts = Object.entries(TYPE_LABEL).map(([k, v]) => `<option value="${k}"${k === ev.type ? ' selected' : ''}>${v}</option>`).join('');
+    return `<li class="ev${ev.on ? '' : ' off'}" data-id="${ev.id}">
+      <input type="checkbox" class="check" id="on-${ev.id}" ${ev.on ? 'checked' : ''} aria-label="Include ${esc(ev.title)}">
+      <select class="chip t-${ev.type}" id="type-${ev.id}" aria-label="Type">${opts}</select>
+      <input type="text" class="title" id="title-${ev.id}" value="${esc(ev.title)}" aria-label="Event name">
+      <input type="date" id="date-${ev.id}" value="${ev.date}" aria-label="Date">
+      <input type="time" id="time-${ev.id}" value="${ev.time}" aria-label="Time (leave empty for all day)">
+      <a class="iconbtn gc" id="gc-${ev.id}" href="${esc(gcalLink(ev, course))}" target="_blank" rel="noopener" title="Add just this one to Google Calendar" aria-label="Add to Google Calendar">${ICON_G}</a>
+      <button class="iconbtn del" type="button" title="Remove" aria-label="Remove ${esc(ev.title)}">${ICON_X}</button>
+      ${ev.source ? `<div class="src" title="${esc(ev.source)}">${esc(ev.source)}</div>` : ''}
+    </li>`;
+  }
+
+  function render() {
+    renderSummary();
+    const course = $('course').value.trim();
+    if (!state.events.length) {
+      $('list').innerHTML = `<div class="empty"><strong>No dates yet</strong><span>Paste your syllabus on the left and press Find dates, or add one yourself.</span></div>`;
+      return;
+    }
+    let html = '', cur = '';
+    for (const ev of state.events) {
+      const [y, m] = ev.date.split('-');
+      const key = y + '-' + m;
+      if (key !== cur) { if (cur) html += '</ul>'; html += `<h3 class="month">${MONTH_NAMES[+m - 1]} ${y}</h3><ul class="events">`; cur = key; }
+      html += rowHTML(ev, course);
+    }
+    $('list').innerHTML = html + '</ul>';
+  }
+
+  const find = id => state.events.find(e => e.id === id);
+  function refreshLink(ev) { const a = $('gc-' + ev.id); if (a) a.href = gcalLink(ev, $('course').value.trim()); }
+
+  $('list').addEventListener('input', e => {
+    const li = e.target.closest('.ev'); if (!li) return;
+    const ev = find(li.dataset.id); if (!ev) return;
+    const el = e.target;
+    if (el.classList.contains('title')) { ev.title = el.value; refreshLink(ev); }
+  });
+  $('list').addEventListener('change', e => {
+    const li = e.target.closest('.ev'); if (!li) return;
+    const ev = find(li.dataset.id); if (!ev) return;
+    const el = e.target;
+    if (el.type === 'checkbox') { ev.on = el.checked; li.classList.toggle('off', !ev.on); renderSummary(); }
+    else if (el.tagName === 'SELECT') { ev.type = el.value; el.className = 'chip t-' + ev.type; renderSummary(); refreshLink(ev); }
+    else if (el.type === 'date') { if (el.value) { ev.date = el.value; state.events.sort(byDate); render(); const n = $('date-' + ev.id); if (n) n.focus(); } }
+    else if (el.type === 'time') { ev.time = el.value; ev.end = ''; refreshLink(ev); }
+  });
+  $('list').addEventListener('click', e => {
+    const b = e.target.closest('.del'); if (!b) return;
+    const li = b.closest('.ev');
+    state.events = state.events.filter(x => x.id !== li.dataset.id);
+    render();
+  });
+
+  $('addBtn').addEventListener('click', () => {
+    const d = new Date();
+    const ev = { id: newId(), on: true, type: 'assignment', title: 'New due date', date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, time: '', end: '', source: '' };
+    state.events.push(ev); state.events.sort(byDate); render();
+    const t = $('title-' + ev.id); if (t) { t.focus(); t.select(); }
+  });
+
+  $('course').addEventListener('input', () => { for (const ev of state.events) refreshLink(ev); });
+  $('term').addEventListener('change', () => { runParse(); toast('Dates re-read for ' + $('term').selectedOptions[0].textContent); });
+  $('findBtn').addEventListener('click', () => {
+    runParse(); setTab('marks');
+    toast(state.events.length ? `Found ${state.events.length} dates` : 'No dates found. Check that the schedule section is included.');
+  });
+  $('tabEdit').addEventListener('click', () => setTab('edit'));
+  $('tabMarks').addEventListener('click', () => { state.text = $('syl').value; setTab('marks'); });
+  $('syl').addEventListener('input', () => { if (state.isExample) { state.isExample = false; $('examplePill').hidden = true; } });
+  $('clearBtn').addEventListener('click', () => {
+    $('syl').value = ''; $('course').value = ''; state.text = ''; state.events = []; state.marks = [];
+    state.isExample = false; $('examplePill').hidden = true; fillTerms(null); render(); setTab('edit'); $('syl').focus();
+  });
+
+  // File upload
+  const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  const loadScript = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Could not load ' + src)); document.head.appendChild(s); });
+  async function pdfText(file) {
+    if (!window.pdfjsLib) await loadScript(PDFJS + 'pdf.min.js');
+    if (!window.pdfjsWorker) await loadScript(PDFJS + 'pdf.worker.min.js');
+    const doc = await window.pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
+    const pages = [];
+    for (let p = 1; p <= doc.numPages; p++) {
+      const page = await doc.getPage(p);
+      const tc = await page.getTextContent();
+      const rows = new Map();
+      for (const it of tc.items) {
+        if (!it.str) continue;
+        const y = Math.round(it.transform[5] / 3);
+        if (!rows.has(y)) rows.set(y, []);
+        rows.get(y).push({ x: it.transform[4], s: it.str, w: it.width || 0 });
+      }
+      const lines = [...rows.entries()].sort((a, b) => b[0] - a[0]).map(([, items]) => {
+        items.sort((a, b) => a.x - b.x);
+        let out = '', lastEnd = null;
+        for (const it of items) { if (lastEnd != null && it.x - lastEnd > 2 && !out.endsWith(' ')) out += it.x - lastEnd > 12 ? '   ' : ' '; out += it.s; lastEnd = it.x + it.w; }
+        return out.trimEnd();
+      });
+      pages.push(lines.join('\n'));
+    }
+    return pages.join('\n\n');
+  }
+  $('file').addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    const note = $('fileNote');
+    note.textContent = 'Reading ' + file.name + '…';
+    try {
+      let text;
+      if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') text = await pdfText(file);
+      else if (/\.(docx?|pages)$/i.test(file.name)) throw new Error('word');
+      else text = await file.text();
+      if (!text.trim()) throw new Error('empty');
+      $('syl').value = text; state.isExample = false; $('examplePill').hidden = true; $('course').value = '';
+      runParse(); setTab('marks');
+      note.textContent = `Read ${file.name}. Highlighted dates are the ones that became events.`;
+    } catch (err) {
+      note.textContent = err.message === 'word' ? 'Word files can\'t be read here. Open the file, copy the text, and paste it into Edit text.'
+        : err.message === 'empty' ? 'That file has no selectable text (it may be a scanned image). Copy the schedule by hand or try a different file.'
+        : 'That file couldn\'t be read. Try copying the text and pasting it into Edit text.';
+    }
+    e.target.value = '';
+  });
+
+  // Export
+  const safeName = () => ($('course').value.trim() || 'syllabus').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'syllabus';
+  const selected = () => state.events.filter(e => e.on && e.date && e.title.trim());
+  function anchorSave(name, data, mime) {
+    const url = URL.createObjectURL(new Blob([data], { type: mime }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
+  }
+
+  $('icsBtn').addEventListener('click', async () => {
+    const evs = selected(); if (!evs.length) return;
+    const ics = buildICS(evs, $('course').value.trim(), +$('remind').value || 0);
+    if (!inViewer) { anchorSave(safeName() + '.ics', ics, 'text/calendar'); toast(`Saved ${evs.length} events. Open the file to add them.`); return; }
+    const ok = await copyText(ics);
+    const box = $('copyBox');
+    if (ok) { box.hidden = true; toast('Calendar file copied'); }
+    else { box.value = ics; box.hidden = false; box.focus(); box.select(); toast('Copy the selected text'); }
+    $('exportNote').textContent = `Paste into a new plain-text file and save it as ${safeName()}.ics, then open it. Apple Calendar and Outlook add every event; Google Calendar can import it under Settings, then Import & export.`;
+  });
+
+  $('csvBtn').addEventListener('click', async () => {
+    const evs = selected(); if (!evs.length) return;
+    const csv = buildCSV(evs, $('course').value.trim());
+    const name = safeName() + '-google-calendar.csv';
+    if (!inViewer) { anchorSave(name, csv, 'text/csv'); toast('Saved. Import it in Google Calendar under Settings, then Import & export.'); return; }
+    if (!downloads) { const ok = await copyText(csv); toast(ok ? 'CSV copied' : 'Saving files isn\'t available here'); return; }
+    try { await downloads.save({ filename: name, data: csv }); toast('Saved. Import it in Google Calendar under Settings, then Import & export.'); }
+    catch (err) {
+      if (err && err.code === 'declined') return;
+      if (err && err.code === 'rate_limited') { toast('A save is already waiting for you. Finish that one first.'); return; }
+      const ok = await copyText(csv); toast(ok ? 'Couldn\'t save the file, so the CSV was copied instead' : 'Saving files isn\'t available here');
+    }
+  });
+
+  // Claude reading (only inside the Claude viewer)
+  let aiCtl = null;
+  $('aiStop').addEventListener('click', () => aiCtl && aiCtl.abort());
+  $('aiBtn').addEventListener('click', async () => {
+    if (!sampler) return;
+    const text = $('syl').value.trim();
+    if (!text) { toast('Paste a syllabus first'); return; }
+    const term = currentTerm();
+    const prompt = `You read college course syllabi and pull out the dates a student needs in their calendar.
+The term is ${SEASON_LABEL[term.season]} ${term.year}. When a date has no year, use the year that fits this term (for a fall term, January to July dates fall in ${term.year + 1}).
+
+Include every exam, midterm, final, quiz, assignment or homework due date, paper, project, lab, presentation, and important administrative dates (no-class days, holidays, breaks, drop deadlines). Do not include ordinary lecture topics.
+
+Reply with ONLY a JSON array. Each item:
+{"title": "short name without the date, e.g. Quiz 2 (Ch. 3–4)", "type": "exam" | "quiz" | "assignment" | "other", "date": "YYYY-MM-DD", "time": "HH:MM" (24-hour) or null, "end": "HH:MM" or null, "source": "the syllabus line it came from"}
+Use "other" for no-class days, breaks, and administrative dates. For a multi-day range, use the first day.
+
+Syllabus:
+"""
+${text.slice(0, 60000)}
+"""`;
+    aiCtl = new AbortController();
+    $('aiBtn').disabled = $('findBtn').disabled = true;
+    $('aiStatus').hidden = false; $('aiMsg').textContent = 'Claude is reading your syllabus. This can take up to a minute.';
+    try {
+      const out = await sampler.json(prompt, { signal: aiCtl.signal });
+      if (!Array.isArray(out)) throw { code: 'invalid_json' };
+      const evs = [];
+      for (const it of out) {
+        if (!it || typeof it.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(it.date) || !it.title) continue;
+        const type = ['exam', 'quiz', 'assignment', 'other'].includes(it.type) ? it.type : 'other';
+        const tm = s => (typeof s === 'string' && /^\d{1,2}:\d{2}$/.test(s)) ? s.padStart(5, '0') : '';
+        evs.push({ id: newId(), on: type !== 'other', type, title: String(it.title).slice(0, 120), date: it.date, time: tm(it.time), end: tm(it.end), source: it.source ? String(it.source).slice(0, 300) : '' });
+      }
+      if (!evs.length) { toast('Claude didn\'t find any dates in that text'); return; }
+      evs.sort(byDate);
+      state.events = evs;
+      state.text = $('syl').value;
+      state.marks = parseSyllabus(state.text, term).marks;
+      render(); renderMarks();
+      toast(`Claude found ${evs.length} dates. Check them against your syllabus.`);
+    } catch (err) {
+      const code = err && err.code;
+      if (code === 'cancelled') {}
+      else if (code === 'not_granted' || code === 'sampling_disabled' || code === 'not_declared' || code === 'capability_disabled' || code === 'capability_removed') { $('aiBtn').hidden = true; toast('Reading with Claude isn\'t available here. Find dates still works.'); }
+      else if (code === 'rate_limited') toast('Too many requests right now. Try again in a little while.');
+      else if (code === 'invalid_json') toast('Claude\'s answer couldn\'t be read. Press the button to try again.');
+      else if (code === 'prompt_too_large') toast('That syllabus is too long. Paste just the schedule section.');
+      else toast('Something went wrong reaching Claude. Try again.');
+    } finally {
+      $('aiBtn').disabled = $('findBtn').disabled = false;
+      $('aiStatus').hidden = true; aiCtl = null;
+    }
+  });
+
+  // Start
+  $('syl').value = SAMPLE;
+  fillTerms(null);
+  runParse();
+  setTab('marks');
+
+  if (inViewer) {
+    $('icsLabel').textContent = 'Copy .ics';
+    window.claude.use('downloads').then(d => { downloads = d; }).catch(() => {});
+    window.claude.use('sample').then(s => { if (s) { sampler = s; $('aiBtn').hidden = false; } }).catch(() => {});
+  }
+}
+
+if (typeof module !== 'undefined') module.exports = { parseSyllabus, buildICS, buildCSV, SAMPLE, detectTerm };
+</script>
+
+</body></html>
